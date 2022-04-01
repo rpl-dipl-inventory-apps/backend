@@ -1,9 +1,5 @@
-# inventroy-app-BE
-Inventory application BE build with java.
-
-S1 INFORMATICS - TELKOM UNIVERSITY 
-
-Sebuah aplikasi manajemen barang yang berfungsi untuk mempermudah hidup seseorang agar tidak perlu melakukan pencatatan barang secara manual.
+# inventroy app backend
+Inventory application backend build with java.
 
 # Build With 
 
