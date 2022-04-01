@@ -1,0 +1,1 @@
+web: java -jar target/Inventory-APP-BE-1.0.jar
