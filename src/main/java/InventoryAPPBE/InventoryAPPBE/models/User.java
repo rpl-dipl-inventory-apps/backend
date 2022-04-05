@@ -36,22 +36,4 @@ public class User extends AbstractModel{
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private List<Supplier> suppliers;
-
-//    @OneToMany(mappedBy = "user")
-//    @ToString.Exclude
-//    @Getter(AccessLevel.NONE)
-//    @Setter(AccessLevel.NONE)
-//    private List<Product> productList;
-//
-//    @OneToMany(mappedBy = "user")
-//    @ToString.Exclude
-//    @Getter(AccessLevel.NONE)
-//    @Setter(AccessLevel.NONE)
-//    private List<Category> categoryList;
-//
-//    @OneToMany(mappedBy = "user")
-//    @ToString.Exclude
-//    @Getter(AccessLevel.NONE)
-//    @Setter(AccessLevel.NONE)
-//    private List<Location> locationList;
 }
