@@ -1,6 +1,5 @@
 package InventoryAPPBE.InventoryAPPBE.repositories.supplier;
 
-import InventoryAPPBE.InventoryAPPBE.models.Product;
 import InventoryAPPBE.InventoryAPPBE.models.Supplier;
 import InventoryAPPBE.InventoryAPPBE.models.User;
 import org.springframework.stereotype.Component;

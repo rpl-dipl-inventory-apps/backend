@@ -266,6 +266,30 @@ public class UserController extends AbstractController<User>{
         }
     }
 
+    @GetMapping("")
+    public ResponseEntity<BaseResponse<List<User>>> getAll() {
+        BaseResponse<List<User>> response = new BaseResponse<>(null, null, null);
+        try {
+            User loggedUser = requestHelper.getUserFromContext();
+            if(!loggedUser.getRole().equals("admin")){
+                response.setData(null);
+                response.setMessage("access denied");
+                response.setStatus("error");
+                return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+            }
+            List<User> users = userRepository.findAll();
+            response.setData(users);
+            response.setMessage("success");
+            response.setStatus("success");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setData(null);
+            response.setMessage(e.getMessage());
+            response.setStatus("error");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private void newCookieRefreshToken(HttpServletResponse responseHttp, String refreshToken){
         responseHttp.setHeader(HttpHeaders.SET_COOKIE, String.format("pbo_sess_id=%s; SameSite=None; Max-Age=604800; path=/; Secure; HttpOnly", refreshToken));
     }

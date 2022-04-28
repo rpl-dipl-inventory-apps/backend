@@ -47,4 +47,18 @@ public class UserRepositoryImpl implements UserRepository {
         
         return user;
     }
+
+    @Override
+    @Transactional
+    public List<User> findAll(){
+        return entityManager.createQuery("SELECT u FROM User u", User.class)
+                .getResultList();
+    }
+
+    @Override
+    @Transactional
+    public List<User> getSuppliers(){
+        return entityManager.createQuery("SELECT u FROM User u WHERE u.role = 'supplier'", User.class)
+                .getResultList();
+    }
 }

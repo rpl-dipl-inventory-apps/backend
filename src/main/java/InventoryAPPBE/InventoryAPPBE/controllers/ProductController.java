@@ -319,12 +319,17 @@ public class ProductController extends AbstractController<ProductDTO> {
                             tempType = "out";
                             tempQtyChangesRequest = oldStock.getQuantity() - stock.getQuantity();
                         }
+                        if (stock.getQuantity() == oldStock.getQuantity()) {
+                            continue;
+                        }
                         StockHistory stockHistory = StockHistory.builder()
                                 .productId(updatedProduct.getId())
                                 .productName(updatedProduct.getProductName())
                                 .userId(loggedUser.getId())
+                                .userName(loggedUser.getUsername())
                                 .type(tempType)
                                 .locationId(stock.getLocation().getId())
+                                .locationName(stock.getLocation().getLocationName())
                                 .actionBy(loggedUser.getUsername())
                                 .stockId(stock.getId())
                                 .quantity(tempQtyChangesRequest)
@@ -345,8 +350,10 @@ public class ProductController extends AbstractController<ProductDTO> {
                                     .productId(updatedProduct.getId())
                                     .productName(updatedProduct.getProductName())
                                     .userId(loggedUser.getId())
+                                    .userName(loggedUser.getUsername())
                                     .type(tempType)
                                     .locationId(stock.getLocation().getId())
+                                    .locationName(stock.getLocation().getLocationName())
                                     .actionBy(loggedUser.getUsername())
                                     .stockId(stock.getId())
                                     .quantity(tempQtyChangesRequest)
@@ -368,8 +375,10 @@ public class ProductController extends AbstractController<ProductDTO> {
                                     .productId(updatedProduct.getId())
                                     .productName(updatedProduct.getProductName())
                                     .userId(loggedUser.getId())
+                                    .userName(loggedUser.getUsername())
                                     .type(tempType)
                                     .locationId(stock.getLocation().getId())
+                                    .locationName(stock.getLocation().getLocationName())
                                     .actionBy(loggedUser.getUsername())
                                     .stockId(stock.getId())
                                     .quantity(tempQtyChangesRequest)
@@ -458,8 +467,10 @@ public class ProductController extends AbstractController<ProductDTO> {
                                 .productId(productFromDB.getId())
                                 .productName(productFromDB.getProductName())
                                 .userId(loggedUser.getId())
+                                .userName(loggedUser.getUsername())
                                 .type(type)
                                 .locationId(stock.getLocation().getId())
+                                .locationName(stock.getLocation().getLocationName())
                                 .actionBy(loggedUser.getUsername())
                                 .stockId(stock.getId())
                                 .quantity(qtyForStockHistory)

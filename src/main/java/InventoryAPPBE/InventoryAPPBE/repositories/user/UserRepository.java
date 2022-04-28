@@ -10,4 +10,7 @@ public interface UserRepository {
     public List<User> findById(int id);
     public User findByEmail(String email);
     public User update(User user);
+    public List<User> findAll();
+
+    public List<User> getSuppliers();
 }
