@@ -3,8 +3,13 @@ package InventoryAPPBE.InventoryAPPBE.models;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
+import javax.persistence.ConstraintMode;
 import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 
 @Getter
 @Setter
@@ -24,8 +29,14 @@ public class StockHistory extends AbstractModel{
     @JsonProperty("location_id")
     private int locationId;
 
+    @JsonProperty("location_name")
+    private String locationName;
+
     @JsonProperty("user_id")
     private int userId;
+
+    @JsonProperty("username")
+    private String userName;
 
     @JsonProperty("stock_id")
     private int stockId;
