@@ -157,7 +157,7 @@ public class UserController extends AbstractController<User>{
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<BaseResponse<ResponseLogin>> refresh(@CookieValue("pbo_sess_id") String refreshToken){
+    public ResponseEntity<BaseResponse<ResponseLogin>> refresh(@CookieValue("sess_id") String refreshToken){
         BaseResponse<ResponseLogin> response = new BaseResponse<>(null, null, null);
         try {
             jwtTokenConfig.setSecret(refreshTokenSecret);
@@ -199,7 +199,7 @@ public class UserController extends AbstractController<User>{
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<BaseResponse<ResponseLogin>> logout(@CookieValue("pbo_sess_id") String refreshToken, HttpServletResponse responseHttp){
+    public ResponseEntity<BaseResponse<ResponseLogin>> logout(@CookieValue("sess_id") String refreshToken, HttpServletResponse responseHttp){
         BaseResponse<ResponseLogin> response = new BaseResponse<>(null, null, null);
         try {
             jwtTokenConfig.setSecret(refreshTokenSecret);
@@ -291,10 +291,10 @@ public class UserController extends AbstractController<User>{
     }
 
     private void newCookieRefreshToken(HttpServletResponse responseHttp, String refreshToken){
-        responseHttp.setHeader(HttpHeaders.SET_COOKIE, String.format("pbo_sess_id=%s; SameSite=None; Max-Age=604800; path=/; Secure; HttpOnly", refreshToken));
+        responseHttp.setHeader(HttpHeaders.SET_COOKIE, String.format("sess_id=%s; SameSite=None; Max-Age=604800; path=/; Secure; HttpOnly", refreshToken));
     }
 
     private void removeCookieRefreshToken(HttpServletResponse responseHttp){
-        responseHttp.setHeader(HttpHeaders.SET_COOKIE, String.format("pbo_sess_id=%s; SameSite=None; Max-Age=-1; path=/; Secure; HttpOnly", ""));
+        responseHttp.setHeader(HttpHeaders.SET_COOKIE, String.format("sess_id=%s; SameSite=None; Max-Age=-1; path=/; Secure; HttpOnly", ""));
     }
 }
