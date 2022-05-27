@@ -5,6 +5,7 @@ import InventoryAPPBE.InventoryAPPBE.helpers.RequestHelper;
 import InventoryAPPBE.InventoryAPPBE.models.StockHistory;
 import InventoryAPPBE.InventoryAPPBE.models.User;
 import InventoryAPPBE.InventoryAPPBE.repositories.stockhistory.StockHistoryRepository;
+import InventoryAPPBE.InventoryAPPBE.repositories.supplier.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +14,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/stockhistory")
 public class StockHistoryController extends AbstractController<StockHistory> {
     @Autowired
     private StockHistoryRepository stockHistoryRepository;
+
+    @Autowired
+    private SupplierRepository supplierRepository;
 
     @Autowired
     private RequestHelper requestHelper;
@@ -29,7 +34,10 @@ public class StockHistoryController extends AbstractController<StockHistory> {
         BaseResponse<ArrayList<StockHistory>> response = new BaseResponse<>(null, null, null);
         try {
             User loggedUser = requestHelper.getUserFromContext();
-            ArrayList<StockHistory> stockHistories = (ArrayList<StockHistory>) stockHistoryRepository.getAll(loggedUser);
+            List<Integer> listIds= supplierRepository.getListOfSuppliers(loggedUser.getId());
+            listIds.add(loggedUser.getId());
+
+            ArrayList<StockHistory> stockHistories = (ArrayList<StockHistory>) stockHistoryRepository.getAll(listIds);
             response.setData(stockHistories);
             response.setMessage("success");
             response.setStatus("success");

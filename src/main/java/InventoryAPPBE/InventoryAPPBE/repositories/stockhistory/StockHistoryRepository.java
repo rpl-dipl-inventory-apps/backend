@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface StockHistoryRepository {
     public StockHistory create(StockHistory stockHistory);
-    public List<StockHistory> getAll(User user);
+    public List<StockHistory> getAll(List<Integer> ids);
     public Integer getTotalIn(User user);
     public Integer getTotalOut(User user);
 }

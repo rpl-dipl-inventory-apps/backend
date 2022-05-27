@@ -50,4 +50,22 @@ public class SupplierRepositoryImpl implements SupplierRepository {
 
         return suppliers.get(0).getOwner();
     }
+
+    public List<Supplier> getAllByOwner(User owner){
+        TypedQuery<Supplier> query = entityManager.createQuery("SELECT s FROM Supplier s WHERE s.owner.id = :ownerId", Supplier.class)
+                .setParameter("ownerId", owner.getId());
+        return query.getResultList();
+    }
+
+    public List<Supplier> getAllBySupplier(User supplier){
+        TypedQuery<Supplier> query = entityManager.createQuery("SELECT s FROM Supplier s WHERE s.supplier.id = :supplierId", Supplier.class)
+                .setParameter("supplierId", supplier.getId());
+        return query.getResultList();
+    }
+
+    public List<Integer> getListOfSuppliers(int ownerId){
+        TypedQuery<Integer> query = entityManager.createQuery("SELECT s.supplier.id FROM Supplier s WHERE s.owner.id = :ownerId", Integer.class)
+                .setParameter("ownerId", ownerId);
+        return query.getResultList();
+    }
 }

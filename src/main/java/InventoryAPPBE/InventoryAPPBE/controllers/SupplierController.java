@@ -14,7 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
+import javax.persistence.EntityNotFoundException;
 import javax.persistence.NoResultException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -43,6 +46,15 @@ public class SupplierController extends AbstractController<SupplierDTO>{
                 throw new BadCredentialsException("You can't add a supplier with a non supplier account");
             }
 
+            // check if the supplier already exists or not
+            try{
+                supplierRepository.verifySupplier(loggedUser.getId(), supplierAccount.getId());
+                throw new BadCredentialsException("You can't add a supplier that already exists");
+            }catch (EntityNotFoundException ignored){
+                //ignored
+            }
+
+
             Supplier supplier = modelMapper.map(req, Supplier.class);
             supplier.setOwner(loggedUser);
             supplier.setSupplier(supplierAccount);
@@ -50,7 +62,7 @@ public class SupplierController extends AbstractController<SupplierDTO>{
 
             SupplierDTO supplierDTO = modelMapper.map(supplier, SupplierDTO.class);
             response.setData(supplierDTO);
-            response.setMessage("Supplier created successfully");
+            response.setMessage("Supplier added successfully");
             return new ResponseEntity<>(response, HttpStatus.OK);
         }catch (BadCredentialsException e){
             response.setData(null);
@@ -62,6 +74,42 @@ public class SupplierController extends AbstractController<SupplierDTO>{
             response.setMessage("email not found");
             response.setStatus("failed");
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            response.setData(null);
+            response.setMessage(e.getMessage());
+            response.setStatus("error");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("")
+    public ResponseEntity<BaseResponse<List<SupplierDTO>>> getAllSupplierByOwner(@RequestParam(required = false) boolean supplier) throws Exception {
+        BaseResponse<List<SupplierDTO>> response = new BaseResponse<>();
+        ModelMapper modelMapper = new ModelMapper();
+        try {
+            User owner = requestHelper.getUserFromContext();
+            List<Supplier> suppliers = null;
+            if(supplier){
+                if(!owner.getRole().equals("supplier")){
+                    throw new BadCredentialsException("You can't get inventories with a non supplier account");
+                }
+                suppliers = supplierRepository.getAllBySupplier(owner);
+            }else{
+                suppliers = supplierRepository.getAllByOwner(owner);
+            }
+            List<SupplierDTO> suppliersDTO = new ArrayList<>();
+            for (Supplier supp : suppliers) {
+                suppliersDTO.add(modelMapper.map(supp, SupplierDTO.class));
+            }
+            response.setData(suppliersDTO);
+            response.setStatus("success");
+            response.setMessage("Suppliers retrieved successfully");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }catch (BadCredentialsException e){
+            response.setData(null);
+            response.setMessage(e.getMessage());
+            response.setStatus("failed");
+            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
         } catch (Exception e) {
             response.setData(null);
             response.setMessage(e.getMessage());

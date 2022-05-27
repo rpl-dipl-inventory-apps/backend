@@ -25,9 +25,10 @@ public class StockHistoryRepositoryImpl implements StockHistoryRepository {
     }
 
     @Override
-    public List<StockHistory> getAll(User user) {
-        TypedQuery<StockHistory> query = entityManager.createQuery("SELECT s FROM StockHistory s WHERE s.userId = :user", StockHistory.class)
-                .setParameter("user", user.getId());
+    public List<StockHistory> getAll(List<Integer> ids) {
+        TypedQuery<StockHistory> query = entityManager.createQuery("SELECT p from StockHistory p WHERE p.userId IN :ids", StockHistory.class)
+                .setParameter("ids", ids);
+
         return query.getResultList();
     }
 

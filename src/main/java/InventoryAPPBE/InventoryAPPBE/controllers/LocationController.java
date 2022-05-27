@@ -6,6 +6,7 @@ import InventoryAPPBE.InventoryAPPBE.models.Location;
 import InventoryAPPBE.InventoryAPPBE.models.User;
 import InventoryAPPBE.InventoryAPPBE.modelsDTO.LocationDTO;
 import InventoryAPPBE.InventoryAPPBE.repositories.location.LocationRepository;
+import InventoryAPPBE.InventoryAPPBE.repositories.supplier.SupplierRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,13 +16,15 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/locations")
 public class LocationController extends AbstractController<LocationDTO> {
     @Autowired
     private LocationRepository locationRepository;
+
+    @Autowired
+    private SupplierRepository supplierRepository;
 
     @Autowired
     private RequestHelper requestHelper;
@@ -52,15 +55,22 @@ public class LocationController extends AbstractController<LocationDTO> {
         }
     }
 
-    @Override
+
     @GetMapping("")
-    public ResponseEntity<BaseResponse<ArrayList<LocationDTO>>> findAll() {
+    public ResponseEntity<BaseResponse<ArrayList<LocationDTO>>> findAll(@RequestParam(required = false) String inventoryid) {
         BaseResponse<ArrayList<LocationDTO>> response = new BaseResponse<>(null, null, null);
         ModelMapper modelMapper = new ModelMapper();
         ArrayList<LocationDTO> locations = new ArrayList<>();
         try {
             User loggedUser = requestHelper.getUserFromContext();
-            ArrayList<Location> location = (ArrayList<Location>) locationRepository.getAllLocation(loggedUser);
+            User owner;
+            if (inventoryid != null && !inventoryid.trim().isEmpty()) {
+                owner = supplierRepository.verifySupplier(Integer.parseInt(inventoryid), loggedUser.getId());
+            }else{
+                owner = loggedUser;
+            }
+
+            ArrayList<Location> location = (ArrayList<Location>) locationRepository.getAllLocation(owner);
             for (Location loc : location) {
                 LocationDTO locationDTO = modelMapper.map(loc, LocationDTO.class);
                 locations.add(locationDTO);

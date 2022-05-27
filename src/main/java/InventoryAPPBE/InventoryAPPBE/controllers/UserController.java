@@ -55,33 +55,54 @@ public class UserController extends AbstractController<User>{
     @Value("${jwt.expiration}")
     private String tokenExpiration;
 
-    @Override
+
     @PostMapping("")
-    public ResponseEntity<BaseResponse<User>> create(@RequestBody User t) {
+    public ResponseEntity<BaseResponse<User>> create(@RequestBody User t, @RequestParam(required = false) Boolean supplier) {
+        // membuat object response
         BaseResponse<User> response = new BaseResponse<>(null, null, null);
         try {
+            // menginisialisasi object model user
             User userFoundByEmail = null;
+
+            // mencari user berdasarkan email
             try {
                 userFoundByEmail = userRepository.findByEmail(t.getEmail());
             }catch (NoResultException ignored){}
 
+            // jika object user tidak sama dengan null
             if(userFoundByEmail != null) {
+                // lempar error email sudah digunakan
                 throw new DuplicateKeyException("email already exists");
             }
 
+            // menginisialisasi object password encoder
             PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+            // mengubah password menjadi hash
             String hashedPassword = passwordEncoder.encode(t.getPassword());
             t.setPassword(hashedPassword);
-            t.setRole("default");
+            // memberikan nilai default role
+            if(supplier){
+                t.setRole("supplier");
+            }else{
+                t.setRole("default");
+            }
+
+
+            // menyimpan data user ke database
             User savedUser = userRepository.create(t);
+
+            // menghapus password dari object user karena tidak perlu ditampilkan
             savedUser.setPassword(null);
+
+            // mengisi object response dengan data user dan status success
             response.setData(savedUser);
             response.setMessage("success");
             response.setStatus("success");
 
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         }catch (DuplicateKeyException e){
+            // mengisi object response dengan pesan error dan status error
             response.setMessage(e.getMessage());
             response.setStatus("failed");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -90,21 +111,28 @@ public class UserController extends AbstractController<User>{
 
     @GetMapping("/verify")
     public ResponseEntity<BaseResponse<User>> findUserById() {
+        // membuat object response
         BaseResponse<User> response = new BaseResponse<>(null, null, null);
         try {
+            // mengambil data user dari user yang sedang login
             User loggedUser = requestHelper.getUserFromContext();
 
+            // menghapus password dari object user karena tidak perlu ditampilkan
             loggedUser.setPassword(null);
+
+            // mengisi object response dengan data user dan status success
             response.setMessage("success");
             response.setStatus("success");
             response.setData(loggedUser);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (NumberFormatException e) {
+            // mengisi object response dengan pesan error dan status error
             response.setData(null);
             response.setMessage(e.getMessage());
             response.setStatus("failed");
             return new ResponseEntity<>(response, HttpStatus.UNPROCESSABLE_ENTITY);
         } catch (Exception e) {
+            // mengisi object response dengan pesan error dan status error
             response.setData(null);
             response.setMessage(e.getMessage());
             response.setStatus("error");
@@ -114,40 +142,70 @@ public class UserController extends AbstractController<User>{
 
     @PostMapping("/login")
     public ResponseEntity<BaseResponse<ResponseLogin>> login(@RequestBody RequestLogin req, HttpServletResponse responseHttp){
+        // membuat object response
         BaseResponse<ResponseLogin> response = new BaseResponse<>(null, null, null);
         try {
+            // mencari user berdasarkan email
             User userFoundByEmail = userRepository.findByEmail(req.getEmail());
+
+            // menginisialisasi object response
             PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+            // membandingkan password dengan password yang ada di database
             boolean result = passwordEncoder.matches(req.getPassword(), userFoundByEmail.getPassword());
+
+            // jika password tidak sesuai
             if(!result){
+                // lempar error password salah
                 throw new BadCredentialsException("password not match");
             }
+
+            // mengiisi nilai umur jwt token untuk access token
             jwtTokenConfig.setJwtTokenValidity(Integer.parseInt(tokenExpiration));
+            // mengisi nilai scret key jwt token untuk access token
             jwtTokenConfig.setSecret(secretKeyToken);
+            // generate jwt token untuk access token
             String token = jwtTokenConfig.generateToken(userFoundByEmail);
+
+            // mengisi nilai umur jwt token untuk refresh token
             jwtTokenConfig.setJwtTokenValidity(Integer.parseInt(refreshTokenExpiration));
+            // mengisi nilai scret key jwt token untuk refresh token
             jwtTokenConfig.setSecret(refreshTokenSecret);
+            // generate jwt token untuk refresh token
             String refreshToken = jwtTokenConfig.generateToken(userFoundByEmail);
 
+            // menginisialisasi object authenication
             Authentication authentication = new Authentication();
+
+            // mengisi nilai user id
             authentication.setUserId(userFoundByEmail.getId());
+
+            // mengisi nilai refresh token
             authentication.setRefreshToken(refreshToken);
+
+            // menyimpan authenication ke dalam database
             authenticationRepository.create(authentication);
 
+            // membuat cookie untuk refresh token
             newCookieRefreshToken(responseHttp, refreshToken);
+
+            // menginisialisasi object response login
             ResponseLogin responseLogin = new ResponseLogin();
             responseLogin.setToken(token);
             response.setData(responseLogin);
             response.setMessage("success");
             response.setStatus("success");
 
+            // mengembalikan response dengan status success
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (BadCredentialsException | NoResultException e){
+            // mengisi object response dengan pesan error dan status error
             response.setData(null);
             response.setMessage("email or password not match");
             response.setStatus("failed");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
+            // mengisi object response dengan pesan error dan status error
             e.printStackTrace();
             response.setData(null);
             response.setMessage(e.getMessage());
@@ -200,18 +258,19 @@ public class UserController extends AbstractController<User>{
 
     @PostMapping("/logout")
     public ResponseEntity<BaseResponse<ResponseLogin>> logout(@CookieValue("sess_id") String refreshToken, HttpServletResponse responseHttp){
+        // menginisiasi object response
         BaseResponse<ResponseLogin> response = new BaseResponse<>(null, null, null);
         try {
-            jwtTokenConfig.setSecret(refreshTokenSecret);
-            jwtTokenConfig.getUserIdFromToken(refreshToken);
-
+            // menghapus refresh token dari cookie
             removeCookieRefreshToken(responseHttp);
             response.setData(null);
             response.setMessage("success");
             response.setStatus("success");
 
+            // mengembalikan response dengan status success
             return new ResponseEntity<>(response, HttpStatus.OK);
         }catch (ExpiredJwtException e){
+            // mengisi object response dengan pesan error dan status error
             removeCookieRefreshToken(responseHttp);
             response.setData(null);
             response.setMessage("success");
@@ -219,19 +278,19 @@ public class UserController extends AbstractController<User>{
 
             return new ResponseEntity<>(response, HttpStatus.OK);
         }catch (EntityNotFoundException | NoResultException e){
+            // mengisi object response dengan pesan error dan status error
             response.setData(null);
             response.setMessage(e.getMessage());
             response.setStatus("failed");
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         } catch (Exception e) {
+            // mengisi object response dengan pesan error dan status error
             e.printStackTrace();
             response.setData(null);
             response.setMessage(e.getMessage());
             response.setStatus("error");
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-
     }
     
     @PutMapping("/edit")
