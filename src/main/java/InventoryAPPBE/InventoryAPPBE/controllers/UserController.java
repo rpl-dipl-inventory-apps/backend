@@ -82,7 +82,7 @@ public class UserController extends AbstractController<User>{
             String hashedPassword = passwordEncoder.encode(t.getPassword());
             t.setPassword(hashedPassword);
             // memberikan nilai default role
-            if(supplier){
+            if(supplier != null && supplier) {
                 t.setRole("supplier");
             }else{
                 t.setRole("default");
