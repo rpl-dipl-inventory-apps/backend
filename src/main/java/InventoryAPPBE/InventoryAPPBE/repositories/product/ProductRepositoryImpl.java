@@ -20,6 +20,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     public Product create(Product product) {
         entityManager.persist(product);
         entityManager.flush();
+        entityManager.refresh(product);
         return product;
     }
 
@@ -100,14 +101,11 @@ public class ProductRepositoryImpl implements ProductRepository {
         query.setParameter("qtyRequested", qtyRequested);
         List<Integer> stockIds = query.getResultList();
 
-
         List<Stock> stocks = new ArrayList<>();
         for (Integer stockId : stockIds) {
             stocks.add(entityManager.find(Stock.class, stockId));
         }
 
-        System.out.println(qtyRequested);
-        System.out.println(stockIds);
         return stocks;
     }
 

@@ -68,23 +68,11 @@ public class ProductController extends AbstractController<ProductDTO> {
             int latestIncrementId = productRepository.getLatestIncrementIdByUser(loggedUser);
             productFromDTO.setIncrementId(latestIncrementId + 1);
 
-            Product product = productRepository.create(productFromDTO);
-            Product savedProduct = productRepository.findById(product.getId(), loggedUser);
-
+            Product savedProduct = productRepository.create(productFromDTO);
             if(savedProduct.getStock() > 0) {
                 List<Stock> stockList = savedProduct.getStockList();
                 for (Stock s : stockList) {
-                    StockHistory stockHistory = StockHistory.builder()
-                            .productId(savedProduct.getId())
-                            .productName(savedProduct.getProductName())
-                            .userId(loggedUser.getId())
-                            .type("in")
-                            .locationId(s.getLocation().getId())
-                            .actionBy(loggedUser.getUsername())
-                            .stockId(s.getId())
-                            .quantity(s.getQuantity())
-                            .build();
-                    stockHistoryRepository.create(stockHistory);
+                    insertStockHistory(savedProduct, loggedUser, s, "in", s.getQuantity());
                 }
             }
             ProductDTO productResponse = modelMapper.map(savedProduct, ProductDTO.class);
@@ -217,16 +205,14 @@ public class ProductController extends AbstractController<ProductDTO> {
             User loggedUser = requestHelper.getUserFromContext();
             int idInteger = Integer.parseInt(id);
             Product deletedProduct =  productRepository.findById(idInteger, loggedUser);
-            if(deletedProduct.getStock() > 0){
-                StockHistory stockHistory = new StockHistory();
-                stockHistory.setProductId(deletedProduct.getId());
-                stockHistory.setProductName(deletedProduct.getProductName());
-                stockHistory.setQuantity(deletedProduct.getStock());
-                stockHistory.setUserId(loggedUser.getId());
-                stockHistory.setType("out");
-                stockHistoryRepository.create(stockHistory);
-            }
             productRepository.deleteProduct(idInteger);
+            if(deletedProduct.getStock() > 0){
+                for (Stock stock: deletedProduct.getStockList()){
+                    if(stock.getQuantity() > 0){
+                        insertStockHistory(deletedProduct, loggedUser, stock, "out", stock.getQuantity());
+                    }
+                }
+            }
             response.setData(null);
             response.setMessage("product has been deleted");
             response.setStatus("success");
@@ -252,13 +238,8 @@ public class ProductController extends AbstractController<ProductDTO> {
         try {
             User loggedUser = requestHelper.getUserFromContext();
             int idInteger = Integer.parseInt(id);
+            User owner = getOwnerByLoggedUser(loggedUser, inventoryid);
 
-            User owner;
-            if (inventoryid != null && !inventoryid.trim().isEmpty()) {
-                owner = supplierRepository.verifySupplier(Integer.parseInt(inventoryid), loggedUser.getId());
-            }else{
-                owner = loggedUser;
-            }
             Product productFromDTO = modelMapper.map(req, Product.class);
 
             Product productFromDB = productRepository.findById(idInteger, owner);
@@ -322,19 +303,7 @@ public class ProductController extends AbstractController<ProductDTO> {
                         if (stock.getQuantity() == oldStock.getQuantity()) {
                             continue;
                         }
-                        StockHistory stockHistory = StockHistory.builder()
-                                .productId(updatedProduct.getId())
-                                .productName(updatedProduct.getProductName())
-                                .userId(loggedUser.getId())
-                                .userName(loggedUser.getUsername())
-                                .type(tempType)
-                                .locationId(stock.getLocation().getId())
-                                .locationName(stock.getLocation().getLocationName())
-                                .actionBy(loggedUser.getUsername())
-                                .stockId(stock.getId())
-                                .quantity(tempQtyChangesRequest)
-                                .build();
-                        stockHistoryRepository.create(stockHistory);
+                        insertStockHistory(updatedProduct, loggedUser, stock, tempType, tempQtyChangesRequest);
                     }
                 }
 
@@ -345,20 +314,7 @@ public class ProductController extends AbstractController<ProductDTO> {
                         if(!oldStockMap.containsKey(stock.getId())) {
                             tempType = "in";
                             tempQtyChangesRequest = stock.getQuantity();
-
-                            StockHistory stockHistory = StockHistory.builder()
-                                    .productId(updatedProduct.getId())
-                                    .productName(updatedProduct.getProductName())
-                                    .userId(loggedUser.getId())
-                                    .userName(loggedUser.getUsername())
-                                    .type(tempType)
-                                    .locationId(stock.getLocation().getId())
-                                    .locationName(stock.getLocation().getLocationName())
-                                    .actionBy(loggedUser.getUsername())
-                                    .stockId(stock.getId())
-                                    .quantity(tempQtyChangesRequest)
-                                    .build();
-                            stockHistoryRepository.create(stockHistory);
+                            insertStockHistory(updatedProduct, loggedUser, stock, tempType, tempQtyChangesRequest);
                         }
 
                     }
@@ -370,24 +326,10 @@ public class ProductController extends AbstractController<ProductDTO> {
                         if(!newStockMap.containsKey(stock.getId())) {
                             tempType = "out";
                             tempQtyChangesRequest = stock.getQuantity();
-
-                            StockHistory stockHistory = StockHistory.builder()
-                                    .productId(updatedProduct.getId())
-                                    .productName(updatedProduct.getProductName())
-                                    .userId(loggedUser.getId())
-                                    .userName(loggedUser.getUsername())
-                                    .type(tempType)
-                                    .locationId(stock.getLocation().getId())
-                                    .locationName(stock.getLocation().getLocationName())
-                                    .actionBy(loggedUser.getUsername())
-                                    .stockId(stock.getId())
-                                    .quantity(tempQtyChangesRequest)
-                                    .build();
-                            stockHistoryRepository.create(stockHistory);
+                            insertStockHistory(updatedProduct, loggedUser, stock, tempType, tempQtyChangesRequest);
                         }
                     }
                 }
-
             }
 
             ProductDTO productResponse = modelMapper.map(updatedProduct, ProductDTO.class);
@@ -414,15 +356,9 @@ public class ProductController extends AbstractController<ProductDTO> {
         BaseResponse<ProductDTO> response = new BaseResponse<>();
         ModelMapper modelMapper = new ModelMapper();
         try {
-            User loggedUser = requestHelper.getUserFromContext();
             int idInteger = Integer.parseInt(id);
-
-            User owner;
-            if (inventoryid != null && !inventoryid.trim().isEmpty()) {
-                owner = supplierRepository.verifySupplier(Integer.parseInt(inventoryid), loggedUser.getId());
-            } else {
-                owner = loggedUser;
-            }
+            User loggedUser = requestHelper.getUserFromContext();
+            User owner = getOwnerByLoggedUser(loggedUser, inventoryid);
 
             int totalStockFromDTO = req.getStock();
             Product productFromDB = productRepository.findById(idInteger, owner);
@@ -463,19 +399,7 @@ public class ProductController extends AbstractController<ProductDTO> {
                             stock.setQuantity(Math.abs(qtyChangesRequest));
                         }
 
-                        StockHistory stockHistory = StockHistory.builder()
-                                .productId(productFromDB.getId())
-                                .productName(productFromDB.getProductName())
-                                .userId(loggedUser.getId())
-                                .userName(loggedUser.getUsername())
-                                .type(type)
-                                .locationId(stock.getLocation().getId())
-                                .locationName(stock.getLocation().getLocationName())
-                                .actionBy(loggedUser.getUsername())
-                                .stockId(stock.getId())
-                                .quantity(qtyForStockHistory)
-                                .build();
-                        stockHistoryRepository.create(stockHistory);
+                        insertStockHistory(updatedProduct, loggedUser, stock, type, qtyForStockHistory);
 
                         // set quantity for stock response
                         stockListResponse.get(index).setQuantity(qtyForStockHistory);
@@ -532,4 +456,30 @@ public class ProductController extends AbstractController<ProductDTO> {
         }
     }
 
+    private User getOwnerByLoggedUser(User loggedUser, String inventoryid) {
+        User owner;
+        if (inventoryid != null && !inventoryid.trim().isEmpty()) {
+            owner = supplierRepository.verifySupplier(Integer.parseInt(inventoryid), loggedUser.getId());
+        } else {
+            owner = loggedUser;
+        }
+
+        return owner;
+    }
+
+    private void insertStockHistory(Product product, User loggedUser, Stock stock, String type, int qty) {
+        StockHistory stockHistory = StockHistory.builder()
+                .productId(product.getId())
+                .productName(product.getProductName())
+                .userId(loggedUser.getId())
+                .userName(loggedUser.getUsername())
+                .type(type)
+                .locationId(stock.getLocation().getId())
+                .locationName(stock.getLocation().getLocationName())
+                .actionBy(loggedUser.getUsername())
+                .stockId(stock.getId())
+                .quantity(qty)
+                .build();
+        stockHistoryRepository.create(stockHistory);
+    }
 }
